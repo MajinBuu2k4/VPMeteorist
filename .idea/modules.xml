@@ -4,6 +4,8 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/Meteorist-main.main.iml" filepath="$PROJECT_DIR$/.idea/modules/Meteorist-main.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/Meteorist-main.test.iml" filepath="$PROJECT_DIR$/.idea/modules/Meteorist-main.test.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/VPMeteoris.main.iml" filepath="$PROJECT_DIR$/.idea/modules/VPMeteoris.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/VPMeteoris.test.iml" filepath="$PROJECT_DIR$/.idea/modules/VPMeteoris.test.iml" />
     </modules>
   </component>
 </project>

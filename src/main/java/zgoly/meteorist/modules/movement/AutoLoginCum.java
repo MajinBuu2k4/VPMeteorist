@@ -1,172 +1,108 @@
 package zgoly.meteorist.modules.movement;
 
+import meteordevelopment.meteorclient.events.game.ReceiveMessageEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent;
-import meteordevelopment.meteorclient.settings.*;
-import meteordevelopment.meteorclient.systems.modules.Categories;
+import meteordevelopment.meteorclient.settings.StringSetting;
+import meteordevelopment.meteorclient.settings.Setting;
+import meteordevelopment.meteorclient.settings.Settings;
 import meteordevelopment.meteorclient.systems.modules.Module;
-import meteordevelopment.meteorclient.utils.misc.Keybind;
+import meteordevelopment.meteorclient.systems.modules.Modules;
+import meteordevelopment.meteorclient.utils.player.ChatUtils;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.client.gui.screen.ingame.GenericContainerScreen;
 import net.minecraft.screen.slot.SlotActionType;
+import net.minecraft.screen.ScreenHandler;
+import net.minecraft.screen.slot.Slot;
 import net.minecraft.text.Text;
-import net.minecraft.util.Hand;
+import net.minecraft.util.math.BlockPos;
 import zgoly.meteorist.Meteorist;
-import meteordevelopment.meteorclient.systems.modules.Modules;
-import meteordevelopment.meteorclient.systems.modules.movement.SafeWalk;
-import zgoly.meteorist.modules.movement.AutoTreo;
 
 public class AutoLoginCum extends Module {
-    // Settings group
-    private final SettingGroup sgGeneral = settings.getDefaultGroup();
+    public static AutoLoginCum INSTANCE;
 
-    private final Setting<Integer> useSlotDelay = sgGeneral.add(new IntSetting.Builder()
-            .name("use-slot-delay")
-            .description("Delay giữa mỗi lần sử dụng Slot 5 (ms)")
-            .defaultValue(30000) // Mặc định là 30 giây
-            .min(0)
-            .sliderMax(60000)
-            .build()
-    );
+    private final Setting<String> password = settings.getDefaultGroup()
+            .add(new StringSetting.Builder()
+                    .name("password")
+                    .description("Lệnh login sẽ được gửi tự động.")
+                    .defaultValue("/login Phuc2005")
+                    .build());
 
-    private final Setting<String> menuTitle = sgGeneral.add(new StringSetting.Builder()
-            .name("menu-title")
-            .description("Tên GUI Menu")
-            .defaultValue("MENU LUCKYVN NETWORK")
-            .build()
-    );
+    private boolean loggedIn = false;
+    private long loginTime = -1;
+    private long lastCheckTime = 0;
 
-    private final Setting<String> serverTitle = sgGeneral.add(new StringSetting.Builder()
-            .name("server-title")
-            .description("Tên GUI Server")
-            .defaultValue("LUCKYVN SURVIVAL")
-            .build()
-    );
-
-    private final Setting<Integer> menuSlot = sgGeneral.add(new IntSetting.Builder()
-            .name("menu-slot")
-            .description("Slot click trong menu")
-            .defaultValue(23)
-            .min(0)
-            .max(53)
-            .build()
-    );
-
-    private final Setting<Integer> serverSlot = sgGeneral.add(new IntSetting.Builder()
-            .name("server-slot")
-            .description("Slot click trong server GUI")
-            .defaultValue(35)
-            .min(0)
-            .max(53)
-            .build()
-    );
-
-    private final Setting<Integer> joinDelay = sgGeneral.add(new IntSetting.Builder()
-            .name("join-delay")
-            .description("Delay trước khi vào cụm (ms)")
-            .defaultValue(3000)
-            .min(0)
-            .sliderMax(10000)
-            .build()
-    );
-
-    private final Setting<Boolean> enableSafeWalk = sgGeneral.add(new BoolSetting.Builder()
-            .name("enable-safe-walk")
-            .description("Bật Safe Walk sau khi vào cụm")
-            .defaultValue(true)
-            .build()
-    );
-
-    private final Setting<Boolean> enableAutoTreo = sgGeneral.add(new BoolSetting.Builder()
-            .name("enable-auto-treo")
-            .description("Bật Auto Treo sau khi vào cụm")
-            .defaultValue(true)
-            .build()
-    );
-
-    private long lastUseSlotTime = 0; // Thời gian sử dụng Slot 5 cuối cùng
-    private enum State {
-        WAITING, MENU, SERVER, JOINED
-    }
-
-    private State state = State.WAITING;
-    private long joinStart = 0;
+    private final BlockPos LOGIN_POS = new BlockPos(0, 65, 0);
 
     public AutoLoginCum() {
-        super(Meteorist.CATEGORY, "AutoLoginCum", "Tự động vào cụm");
+        super(Meteorist.CATEGORY, "AutoLoginCum", "Tự động gửi lệnh /login khi đúng vị trí.");
+        INSTANCE = this;
+    }
+
+    @Override
+    public void onActivate() {
+        loggedIn = false;
+        loginTime = -1;
+        lastCheckTime = System.currentTimeMillis();
     }
 
     @EventHandler
     private void onTick(TickEvent.Post event) {
         if (mc.player == null || mc.world == null) return;
 
-        long currentTime = System.currentTimeMillis();
+        // Nếu chưa login và đang ở đúng vị trí
+        if (!loggedIn && isInLoginArea()) {
+            ChatUtils.sendPlayerMsg(password.get());
+            loggedIn = true;
+            loginTime = System.currentTimeMillis();
+            return;
+        }
 
-        switch (state) {
-            case WAITING -> {
-                // Kiểm tra thời gian giữa mỗi lần sử dụng slot 5
-                if (currentTime - lastUseSlotTime >= useSlotDelay.get()) {
-                    lastUseSlotTime = currentTime;
-                    // Sử dụng Slot 5 để mở menu
-                    mc.player.getInventory().selectedSlot = 4; // slot 5 (index bắt đầu từ 0)
-                    mc.interactionManager.interactItem(mc.player, Hand.MAIN_HAND); // Click chuột phải
-                    info("Đã sử dụng Slot 5 và click chuột phải để mở menu.");
-                    state = State.MENU;
-                }
+        // Sau khi login xong 1s thì bật AutoClickLoginCum
+        if (loggedIn && loginTime > 0 && System.currentTimeMillis() - loginTime >= 1000) {
+            Module clickModule = Modules.get().get(AutoClickLoginCum.class);
+            if (clickModule != null && !clickModule.isActive()) {
+                clickModule.toggle();
+                info("✅ On AutoClickLoginCum.");
+            }
+            loginTime = -1;
+        }
+
+        // Kiểm tra điều kiện mỗi 10 giây
+        if (System.currentTimeMillis() - lastCheckTime >= 10_000) {
+            lastCheckTime = System.currentTimeMillis();
+
+            if (checkConditionMet()) {
+                info("✅ Okayyy.");
+            } else {
+                warning("❌ Nooooooo.");
             }
 
-            case MENU -> {
-                if (!(mc.currentScreen instanceof GenericContainerScreen)) return;
-                Text title = mc.currentScreen.getTitle();
-                if (title != null && title.getString().equalsIgnoreCase(menuTitle.get())) {
-                    clickSlot(menuSlot.get());
-                    info("Đã click vào slot trong menu.");
-                    state = State.SERVER;
-                }
-            }
-
-            case SERVER -> {
-                if (!(mc.currentScreen instanceof GenericContainerScreen)) return;
-                Text title = mc.currentScreen.getTitle();
-                if (title != null && title.getString().equalsIgnoreCase(serverTitle.get())) {
-                    clickSlot(serverSlot.get());
-                    joinStart = currentTime;
-                    info("Đã click vào slot trong server GUI.");
-                    state = State.JOINED;
-                }
-            }
-
-            case JOINED -> {
-                if (currentTime - joinStart >= joinDelay.get()) {
-                    if (enableSafeWalk.get()) {
-                        Module safeWalk = Modules.get().get(SafeWalk.class);
-                        if (!safeWalk.isActive()) safeWalk.toggle();
-                        info("Đã bật Safe Walk.");
-                    }
-
-                    if (enableAutoTreo.get()) {
-                        Module autoTreo = Modules.get().get(AutoTreo.class);
-                        if (!autoTreo.isActive()) autoTreo.toggle();
-                        info("Đã bật Auto Treo.");
-                    }
-
-                    state = State.WAITING;
-                }
+            // Luôn bật AutoClickLoginCum sau khi kiểm tra xong
+            Module clickModule = Modules.get().get(AutoClickLoginCum.class);
+            if (clickModule != null && !clickModule.isActive()) {
+                clickModule.toggle();
+                info("✅ On AutoClickLoginCum sau check.");
             }
         }
     }
 
-    // Click vào slot trong GUI
-    private void clickSlot(int slotIndex) {
-        if (mc.player == null || mc.currentScreen == null) return;
-        if (!(mc.currentScreen instanceof GenericContainerScreen screen)) return;
+    @EventHandler
+    private void onReceiveMsg(ReceiveMessageEvent event) {
+        Text msg = event.getMessage();
+        if (msg != null && msg.getString().contains("Vui lòng đăng nhập")) {
+            ChatUtils.sendPlayerMsg(password.get());
+            loggedIn = true;
+            loginTime = System.currentTimeMillis();
+        }
+    }
 
-        mc.interactionManager.clickSlot(
-                screen.getScreenHandler().syncId,
-                slotIndex,
-                0,
-                SlotActionType.PICKUP,
-                mc.player
-        );
-        info("Đã click vào slot: " + slotIndex);
+    private boolean isInLoginArea() {
+        BlockPos pos = mc.player.getBlockPos();
+        return pos.equals(LOGIN_POS);
+    }
+
+    private boolean checkConditionMet() {
+        // Điều kiện giả lập, bạn có thể thay bằng điều kiện khác
+        return loggedIn;
     }
 }

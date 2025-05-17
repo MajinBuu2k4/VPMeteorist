@@ -23,14 +23,13 @@ import zgoly.meteorist.modules.autocrafter.AutoCrafter;
 import zgoly.meteorist.modules.autologin.AutoLogin;
 import zgoly.meteorist.modules.autotrade.AutoTrade;
 import zgoly.meteorist.modules.instructions.Instructions;
+import zgoly.meteorist.modules.movement.*;
 import zgoly.meteorist.modules.placer.Placer;
 import zgoly.meteorist.modules.rangeactions.RangeActions;
 import zgoly.meteorist.modules.slotclick.SlotClick;
 import zgoly.meteorist.settings.StringPairSetting;
 import zgoly.meteorist.utils.misc.MeteoristStarscript;
-import zgoly.meteorist.modules.movement.SaveTP;
-import zgoly.meteorist.modules.movement.AutoTreo;
-import zgoly.meteorist.modules.movement.AutoLoginCum;
+//Tự thêm
 
 
 import java.util.Random;
@@ -99,9 +98,23 @@ public class Meteorist extends MeteorAddon {
         Modules.get().add(new ZAimbot());
         Modules.get().add(new ZKillaura());
         Modules.get().add(new ZoomPlus());
+
+
+
+        //Tự thêm
         Modules.get().add(new SaveTP());
         Modules.get().add(new AutoTreo());
         Modules.get().add(new AutoLoginCum());
+        Modules.get().add(new AutoClickLoginCum());
+        Modules.get().add(new LookAtOnce());
+        Modules.get().add(new AutoTraLoi());
+        Modules.get().add(new AutoQuaNether());
+        Modules.get().add(new AutoQuaAFK());
+        Modules.get().add(new GotoBaritone());
+        Modules.get().add(new BossCs5());
+
+
+
 
         // Commands
         LOG.info("Registering commands...");
