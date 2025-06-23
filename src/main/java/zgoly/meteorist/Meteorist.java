@@ -112,6 +112,7 @@ public class Meteorist extends MeteorAddon {
         Modules.get().add(new AutoQuaAFK());
         Modules.get().add(new GotoBaritone());
         Modules.get().add(new BossCs5());
+        Modules.get().add(new AutoGotoMine());
 
 
 
